@@ -1,0 +1,662 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>FoodBridge — AI-Assisted Surplus Food Redistribution</title>
+    <meta name="description" content="Intelligent surplus food rescue platform connecting food donors, NGOs, and volunteers using Vision AI, multi-factor matching, and live logistics tracking.">
+    
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Outfit:wght@500;600;700;800&display=swap" rel="stylesheet">
+    
+    <!-- Leaflet CSS for Interactive Map -->
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin=""/>
+    
+    <!-- Font Awesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    
+    <!-- Custom Style -->
+    <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+
+    <!-- Notification Toast Container -->
+    <div id="toast-container" class="toast-container"></div>
+
+    <!-- Navigation Header -->
+    <header class="navbar">
+        <div class="nav-container">
+            <div class="brand">
+                <div class="brand-logo">
+                    <i class="fa-solid fa-bowl-rice"></i>
+                </div>
+                <div class="brand-text">
+                    <h1>FoodBridge <span class="badge-ai">AI-Assisted</span></h1>
+                    <p class="tagline">Surplus Food Rescue & Redistribution Network</p>
+                </div>
+            </div>
+
+            <!-- Global Live Impact Ticker -->
+            <div class="nav-ticker" id="nav-ticker">
+                <div class="ticker-item">
+                    <i class="fa-solid fa-seedling"></i>
+                    <span id="ticker-kg">178 kg</span> <small>Rescued</small>
+                </div>
+                <div class="ticker-item">
+                    <i class="fa-solid fa-utensils"></i>
+                    <span id="ticker-meals">534</span> <small>Meals Served</small>
+                </div>
+                <div class="ticker-item">
+                    <i class="fa-solid fa-cloud"></i>
+                    <span id="ticker-co2">445 kg</span> <small>CO₂ Avoided</small>
+                </div>
+            </div>
+
+            <!-- Role & Profile Switcher -->
+            <div class="nav-actions">
+                <div class="user-role-select">
+                    <label for="current-user-role"><i class="fa-solid fa-user-gear"></i> Active Persona:</label>
+                    <select id="current-user-role" onchange="switchPersona(this.value)">
+                        <optgroup label="🍱 Food Donors">
+                            <option value="donor_1">The Grand Palace Hotel (Donor)</option>
+                            <option value="donor_2">Royal Feast Caterers (Donor)</option>
+                            <option value="donor_4">Artisan Bakery & Cafe (Donor)</option>
+                        </optgroup>
+                        <optgroup label="🤝 NGOs & Shelters">
+                            <option value="ngo_5">Hope & Care Shelter (NGO)</option>
+                            <option value="ngo_6">Annapurna Seva Trust (NGO)</option>
+                            <option value="ngo_7">Care For All Children Home (NGO)</option>
+                        </optgroup>
+                        <optgroup label="🚴 Volunteer Rescuers">
+                            <option value="vol_8">Rahul Sharma (Bike Volunteer)</option>
+                            <option value="vol_9">Priya Verma (EV Scooter Volunteer)</option>
+                            <option value="vol_10">Arun Kumar (Van Volunteer)</option>
+                        </optgroup>
+                    </select>
+                </div>
+
+                <button class="btn btn-icon notif-bell-btn" onclick="toggleNotificationPanel()" title="Notifications">
+                    <i class="fa-solid fa-bell"></i>
+                    <span class="notif-badge" id="unread-notif-count">3</span>
+                </button>
+
+                <button class="btn btn-cie-guide" onclick="openCieModal()" title="CIE Project Defense Guide">
+                    <i class="fa-solid fa-graduation-cap"></i> CIE Guide
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <!-- Navigation Tab Bar -->
+    <nav class="tab-nav">
+        <div class="nav-container tab-scroll">
+            <button class="tab-btn active" data-tab="donor-tab" onclick="switchTab('donor-tab')">
+                <i class="fa-solid fa-hand-holding-heart"></i>
+                <span>Donor Portal</span>
+                <span class="tab-indicator"></span>
+            </button>
+            <button class="tab-btn" data-tab="ngo-tab" onclick="switchTab('ngo-tab')">
+                <i class="fa-solid fa-handshake-angle"></i>
+                <span>NGO Hub & Matching</span>
+                <span class="tab-indicator"></span>
+            </button>
+            <button class="tab-btn" data-tab="volunteer-tab" onclick="switchTab('volunteer-tab')">
+                <i class="fa-solid fa-bicycle"></i>
+                <span>Volunteer Dispatch</span>
+                <span class="tab-indicator"></span>
+            </button>
+            <button class="tab-btn" data-tab="map-tab" onclick="switchTab('map-tab')">
+                <i class="fa-solid fa-map-location-dot"></i>
+                <span>Live Logistics Map</span>
+                <span class="tab-indicator"></span>
+            </button>
+            <button class="tab-btn" data-tab="impact-tab" onclick="switchTab('impact-tab')">
+                <i class="fa-solid fa-chart-line"></i>
+                <span>Impact Analytics</span>
+                <span class="tab-indicator"></span>
+            </button>
+        </div>
+    </nav>
+
+    <!-- Main Content Container -->
+    <main class="main-container">
+
+        <!-- ==================== TAB 1: DONOR PORTAL ==================== -->
+        <section id="donor-tab" class="tab-content active">
+            <div class="view-header">
+                <div class="view-title">
+                    <h2>🍱 Food Donor Command Center</h2>
+                    <p>Log surplus food, trigger AI visual verification, evaluate urgency, and track redistribution in real-time.</p>
+                </div>
+                <div class="quick-stats-strip">
+                    <div class="strip-card">
+                        <span class="strip-label">My Active Donations</span>
+                        <span class="strip-value" id="donor-active-count">2</span>
+                    </div>
+                    <div class="strip-card">
+                        <span class="strip-label">Total Rescued by Me</span>
+                        <span class="strip-value" id="donor-total-rescued">63 kg</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="grid-2-col">
+                <!-- Left: Post Surplus Food Form -->
+                <div class="card glass-card">
+                    <div class="card-header">
+                        <div class="card-header-icon"><i class="fa-solid fa-cloud-arrow-up"></i></div>
+                        <div>
+                            <h3>Log Surplus Food Donation</h3>
+                            <p class="card-subtitle">AI-assisted visual verification & automated urgency scoring</p>
+                        </div>
+                    </div>
+
+                    <form id="donor-form" onsubmit="handleDonorSubmit(event)">
+                        <div class="form-group">
+                            <label for="food-title">Donation Title / Summary <span class="required">*</span></label>
+                            <input type="text" id="food-title" required placeholder="e.g. Corporate Lunch Buffet - Paneer Butter Masala & Jeera Rice">
+                        </div>
+
+                        <div class="form-row">
+                            <div class="form-group flex-1">
+                                <label for="food-type">Food Category <span class="required">*</span></label>
+                                <select id="food-type" required onchange="updateLiveUrgencyPreview()">
+                                    <option value="Cooked Meals">Cooked Meals (Perishable)</option>
+                                    <option value="Bakery Items">Bakery Items & Breads</option>
+                                    <option value="Packaged Food">Packaged & Sealed Meals</option>
+                                    <option value="Fruits & Vegetables">Fruits & Fresh Produce</option>
+                                    <option value="Dairy Products">Dairy Products & Sweets</option>
+                                </select>
+                            </div>
+                            <div class="form-group flex-1">
+                                <label for="food-qty">Quantity (kg) <span class="required">*</span></label>
+                                <input type="number" id="food-qty" required min="1" max="500" step="0.5" value="25" oninput="updateLiveUrgencyPreview()">
+                                <small class="helper-text" id="meal-equiv-helper">≈ 75 meal-equivalents</small>
+                            </div>
+                        </div>
+
+                        <div class="form-row">
+                            <div class="form-group flex-1">
+                                <label for="food-address">Pickup Location Address <span class="required">*</span></label>
+                                <input type="text" id="food-address" required value="MG Road, Bengaluru">
+                            </div>
+                            <div class="form-group flex-1">
+                                <label for="food-deadline">Pickup Deadline <span class="required">*</span></label>
+                                <input type="datetime-local" id="food-deadline" required onchange="updateLiveUrgencyPreview()">
+                            </div>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="food-notes">Freshness & Storage Notes</label>
+                            <input type="text" id="food-notes" placeholder="e.g. Prepared 1 hour ago, kept in warm commercial stainless steel vessels" oninput="updateLiveUrgencyPreview()">
+                        </div>
+
+                        <!-- Image Upload & VLM Preview Trigger -->
+                        <div class="form-group">
+                            <label>Food Photograph (For AI VLM Verification) <span class="required">*</span></label>
+                            <div class="image-upload-wrapper" id="image-dropzone">
+                                <input type="file" id="food-image-file" accept="image/*" onchange="handleImageSelection(event)">
+                                <div class="upload-placeholder" id="upload-placeholder">
+                                    <i class="fa-solid fa-camera-retro"></i>
+                                    <p><strong>Click to upload</strong> or drag & drop food image</p>
+                                    <small>Visual Language Model verifies bulk container & portion scale</small>
+                                </div>
+                                <div class="image-preview-container hidden" id="image-preview-container">
+                                    <img id="image-preview-img" src="" alt="Food Preview">
+                                    <button type="button" class="btn-remove-img" onclick="removeSelectedImage()"><i class="fa-solid fa-xmark"></i></button>
+                                </div>
+                            </div>
+
+                            <!-- Sample Quick Image Presets for CIE Demo -->
+                            <div class="sample-images-strip">
+                                <span>Quick Demo Images:</span>
+                                <button type="button" class="btn-chip" onclick="useSampleImage('buffet')">🍲 Buffet Trays</button>
+                                <button type="button" class="btn-chip" onclick="useSampleImage('biryani')">🥘 Bulk Biryani</button>
+                                <button type="button" class="btn-chip" onclick="useSampleImage('bakery')">🍞 Bakery Crates</button>
+                                <button type="button" class="btn-chip" onclick="useSampleImage('packaged')">🍱 Sealed Packs</button>
+                            </div>
+                        </div>
+
+                        <!-- AI VLM Verification Preview Card -->
+                        <div class="vlm-status-box" id="vlm-preview-box">
+                            <div class="vlm-header">
+                                <span class="vlm-badge"><i class="fa-solid fa-robot"></i> AI Visual Verification</span>
+                                <span class="vlm-model-tag">Ollama + LLaVA Engine</span>
+                            </div>
+                            <div class="vlm-body" id="vlm-body-content">
+                                <p class="vlm-status-text"><i class="fa-solid fa-spinner fa-spin"></i> Ready to verify image upon selection...</p>
+                            </div>
+                        </div>
+
+                        <!-- Quality / Urgency Score Live Preview -->
+                        <div class="urgency-calc-box">
+                            <div class="urgency-header">
+                                <div>
+                                    <span class="calc-label">Calculated Quality / Urgency Score</span>
+                                    <p class="calc-sub">Decay heuristic with real-time Open-Meteo weather</p>
+                                </div>
+                                <div class="score-pill" id="score-pill">
+                                    <span class="score-number" id="live-score-val">88</span>/100
+                                </div>
+                            </div>
+                            <div class="score-breakdown-bar">
+                                <div class="progress-fill" id="score-progress" style="width: 88%;"></div>
+                            </div>
+                            <div class="weather-pill" id="weather-pill">
+                                <i class="fa-solid fa-temperature-half"></i> <span id="weather-temp">27.5°C</span> | <i class="fa-solid fa-droplet"></i> <span id="weather-hum">62% Humidity</span> (<span id="weather-cond">Partly Cloudy</span>)
+                            </div>
+                        </div>
+
+                        <button type="submit" class="btn btn-primary btn-block btn-lg" id="btn-submit-donation">
+                            <i class="fa-solid fa-paper-plane"></i> Publish Surplus Food to Bridge
+                        </button>
+                    </form>
+                </div>
+
+                <!-- Right: Active Listings Feed -->
+                <div class="card glass-card">
+                    <div class="card-header">
+                        <div class="card-header-icon"><i class="fa-solid fa-list-check"></i></div>
+                        <div>
+                            <h3>Active Surplus Food Listings</h3>
+                            <p class="card-subtitle">Real-time status tracking & matching progress</p>
+                        </div>
+                        <div class="filter-pills">
+                            <button class="pill-btn active" onclick="filterListings('all')">All</button>
+                            <button class="pill-btn" onclick="filterListings('available')">Available</button>
+                            <button class="pill-btn" onclick="filterListings('matched')">In Transit</button>
+                        </div>
+                    </div>
+
+                    <div class="listings-scroll" id="donor-listings-container">
+                        <!-- Dynamic listings rendered here -->
+                        <div class="loader-box"><i class="fa-solid fa-spinner fa-spin"></i> Loading surplus listings...</div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- ==================== TAB 2: NGO HUB & MATCHING ==================== -->
+        <section id="ngo-tab" class="tab-content">
+            <div class="view-header">
+                <div class="view-title">
+                    <h2>🤝 NGO Requirement & Intelligent Matching Engine</h2>
+                    <p>Post food requirements, view auto-calculated compatibility scores, and accept matched surplus food.</p>
+                </div>
+                <button class="btn btn-secondary" onclick="openCreateRequirementModal()">
+                    <i class="fa-solid fa-plus-circle"></i> Post New Food Requirement
+                </button>
+            </div>
+
+            <!-- Intelligent Matching Showcase -->
+            <div class="matching-banner">
+                <div class="matching-banner-text">
+                    <span class="engine-badge"><i class="fa-solid fa-wand-magic-sparkles"></i> AI Multi-Factor Matching Active</span>
+                    <h3>Automated Supply $\leftrightarrow$ Demand Coordination</h3>
+                    <p>Matching weights: Distance Proximity (35%) • Food Compatibility (25%) • Quantity Coverage (20%) • Urgency Decay (20%)</p>
+                </div>
+                <div class="matching-quick-metric">
+                    <span class="match-stat-val" id="active-matches-count">4</span>
+                    <span class="match-stat-label">Candidate Matches Found</span>
+                </div>
+            </div>
+
+            <div class="grid-2-col">
+                <!-- Left: NGO Requirements & Matched Feed -->
+                <div class="card glass-card">
+                    <div class="card-header">
+                        <div class="card-header-icon"><i class="fa-solid fa-clipboard-list"></i></div>
+                        <div>
+                            <h3>Active NGO Requirements (Demand)</h3>
+                            <p class="card-subtitle">Community shelters & distribution centers requiring meals</p>
+                        </div>
+                    </div>
+                    <div class="requirements-list" id="ngo-requirements-container">
+                        <!-- Rendered via JS -->
+                    </div>
+                </div>
+
+                <!-- Right: High-Compatibility Matched Food Recommendations -->
+                <div class="card glass-card">
+                    <div class="card-header">
+                        <div class="card-header-icon"><i class="fa-solid fa-bolt"></i></div>
+                        <div>
+                            <h3>Top Recommended Surplus Food</h3>
+                            <p class="card-subtitle">Ranked by algorithm compatibility & transport feasibility</p>
+                        </div>
+                    </div>
+                    <div class="matched-recommendations-list" id="ngo-recommendations-container">
+                        <!-- Rendered via JS -->
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- ==================== TAB 3: VOLUNTEER DISPATCH ==================== -->
+        <section id="volunteer-tab" class="tab-content">
+            <div class="view-header">
+                <div class="view-title">
+                    <h2>🚴 Volunteer Food Rescue Dispatch</h2>
+                    <p>Claim nearby food pickup tasks, view estimated transport costs, and complete the physical delivery lifecycle.</p>
+                </div>
+                <div class="volunteer-profile-badge">
+                    <i class="fa-solid fa-id-badge"></i>
+                    <div>
+                        <strong id="vol-active-name">Rahul Sharma</strong>
+                        <small id="vol-vehicle-type">🚴 Bike / EV Rescuer</small>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Transport Pricing Explainer Strip -->
+            <div class="transport-explainer-card">
+                <div class="explainer-icon"><i class="fa-solid fa-circle-info"></i></div>
+                <div class="explainer-text">
+                    <strong>Zero-Cost Food Model & Fair Transport Transparency:</strong>
+                    <span>All surplus food is 100% free. The accepting NGO or volunteer handles local transport logistics. FoodBridge computes fair distance-based transport estimates (₹) before task acceptance.</span>
+                </div>
+            </div>
+
+            <!-- Volunteer Rescue Task Grid -->
+            <div class="task-board-container" id="volunteer-tasks-container">
+                <!-- Rendered via JS -->
+            </div>
+        </section>
+
+        <!-- ==================== TAB 4: LIVE LOGISTICS MAP ==================== -->
+        <section id="map-tab" class="tab-content">
+            <div class="view-header">
+                <div class="view-title">
+                    <h2>🗺️ Live Geospatial Redistribution Map</h2>
+                    <p>Interactive overview of donors, NGOs, volunteers, and active rescue routes in Bengaluru.</p>
+                </div>
+                <div class="map-legend">
+                    <span class="legend-item"><span class="legend-dot red"></span> Urgent Surplus (Score ≥ 85)</span>
+                    <span class="legend-item"><span class="legend-dot orange"></span> High Priority (Score 70-84)</span>
+                    <span class="legend-item"><span class="legend-dot green"></span> Normal Window</span>
+                    <span class="legend-item"><span class="legend-dot blue"></span> NGO Shelters</span>
+                    <span class="legend-item"><span class="legend-dot purple"></span> Active Volunteers</span>
+                </div>
+            </div>
+
+            <div class="card glass-card map-card-wrapper">
+                <div id="leaflet-map" class="leaflet-map-canvas"></div>
+            </div>
+        </section>
+
+        <!-- ==================== TAB 5: IMPACT ANALYTICS ==================== -->
+        <section id="impact-tab" class="tab-content">
+            <div class="view-header">
+                <div class="view-title">
+                    <h2>📊 Social & Environmental Impact Analytics</h2>
+                    <p>Transparent real-time metrics on food waste reduction, meal redistribution, and carbon offset.</p>
+                </div>
+                <button class="btn btn-secondary" onclick="exportImpactReport()">
+                    <i class="fa-solid fa-download"></i> Export Impact Summary
+                </button>
+            </div>
+
+            <!-- Big Stat Cards -->
+            <div class="stats-grid">
+                <div class="stat-card">
+                    <div class="stat-icon-wrap green"><i class="fa-solid fa-scale-balanced"></i></div>
+                    <div class="stat-meta">
+                        <span class="stat-title">Total Food Rescued</span>
+                        <h3 class="stat-digit" id="stat-total-kg">178 <small>kg</small></h3>
+                        <span class="stat-sub">From 4 registered donor kitchens</span>
+                    </div>
+                </div>
+
+                <div class="stat-card">
+                    <div class="stat-icon-wrap blue"><i class="fa-solid fa-bowl-food"></i></div>
+                    <div class="stat-meta">
+                        <span class="stat-title">Meals Served</span>
+                        <h3 class="stat-digit" id="stat-total-meals">534 <small>meals</small></h3>
+                        <span class="stat-sub">Redistributed to 3 NGO shelters</span>
+                    </div>
+                </div>
+
+                <div class="stat-card">
+                    <div class="stat-icon-wrap teal"><i class="fa-solid fa-leaf"></i></div>
+                    <div class="stat-meta">
+                        <span class="stat-title">CO₂ Emissions Avoided</span>
+                        <h3 class="stat-digit" id="stat-total-co2">445 <small>kg CO₂e</small></h3>
+                        <span class="stat-sub">Calculated via UNEP food waste metrics</span>
+                    </div>
+                </div>
+
+                <div class="stat-card">
+                    <div class="stat-icon-wrap purple"><i class="fa-solid fa-truck-fast"></i></div>
+                    <div class="stat-meta">
+                        <span class="stat-title">Successful Deliveries</span>
+                        <h3 class="stat-digit" id="stat-total-deliveries">5</h3>
+                        <span class="stat-sub">100% delivery confirmation rate</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Charts Row -->
+            <div class="grid-2-col" style="margin-top: 1.5rem;">
+                <div class="card glass-card">
+                    <div class="card-header">
+                        <div class="card-header-icon"><i class="fa-solid fa-chart-pie"></i></div>
+                        <div>
+                            <h3>Rescued Food by Category</h3>
+                            <p class="card-subtitle">Proportion of cooked meals, bakery, and produce</p>
+                        </div>
+                    </div>
+                    <div class="chart-container">
+                        <canvas id="categoryChart"></canvas>
+                    </div>
+                </div>
+
+                <div class="card glass-card">
+                    <div class="card-header">
+                        <div class="card-header-icon"><i class="fa-solid fa-chart-column"></i></div>
+                        <div>
+                            <h3>Redistribution Lifecycle Pipeline</h3>
+                            <p class="card-subtitle">Active listings across the 7-step state workflow</p>
+                        </div>
+                    </div>
+                    <div class="chart-container">
+                        <canvas id="pipelineChart"></canvas>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Leaderboards Row -->
+            <div class="grid-2-col" style="margin-top: 1.5rem;">
+                <div class="card glass-card">
+                    <div class="card-header">
+                        <div class="card-header-icon"><i class="fa-solid fa-trophy text-gold"></i></div>
+                        <div>
+                            <h3>Top Food Donor Leaderboard</h3>
+                            <p class="card-subtitle">Recognizing community kitchens & restaurants</p>
+                        </div>
+                    </div>
+                    <div class="leaderboard-table-wrap" id="donor-leaderboard-container">
+                        <!-- Rendered via JS -->
+                    </div>
+                </div>
+
+                <div class="card glass-card">
+                    <div class="card-header">
+                        <div class="card-header-icon"><i class="fa-solid fa-medal text-silver"></i></div>
+                        <div>
+                            <h3>Top Volunteer Rescuer Leaderboard</h3>
+                            <p class="card-subtitle">Volunteers with highest completed food deliveries</p>
+                        </div>
+                    </div>
+                    <div class="leaderboard-table-wrap" id="volunteer-leaderboard-container">
+                        <!-- Rendered via JS -->
+                    </div>
+                </div>
+            </div>
+
+            <!-- Recent Verified Delivery Audit Log -->
+            <div class="card glass-card" style="margin-top: 1.5rem;">
+                <div class="card-header">
+                    <div class="card-header-icon"><i class="fa-solid fa-fingerprint"></i></div>
+                    <div>
+                        <h3>Verified Delivery Audit Trail</h3>
+                        <p class="card-subtitle">Full end-to-end chain of custody log with timestamps</p>
+                    </div>
+                </div>
+                <div class="audit-log-table-wrap">
+                    <table class="audit-table">
+                        <thead>
+                            <tr>
+                                <th>Delivery ID</th>
+                                <th>Food Title & Type</th>
+                                <th>Donor Source</th>
+                                <th>Receiving NGO</th>
+                                <th>Volunteer</th>
+                                <th>Rescued Quantity</th>
+                                <th>CO₂ Avoided</th>
+                                <th>Timestamp</th>
+                                <th>Status</th>
+                            </tr>
+                        </thead>
+                        <tbody id="audit-log-tbody">
+                            <!-- Rendered via JS -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </section>
+
+    </main>
+
+    <!-- Notification Side Drawer -->
+    <div class="drawer-overlay" id="notif-overlay" onclick="toggleNotificationPanel()"></div>
+    <aside class="notif-drawer" id="notif-drawer">
+        <div class="drawer-header">
+            <h3><i class="fa-solid fa-bell"></i> Notifications & Alerts</h3>
+            <button class="btn btn-icon" onclick="toggleNotificationPanel()"><i class="fa-solid fa-xmark"></i></button>
+        </div>
+        <div class="drawer-actions">
+            <button class="btn-text" onclick="markAllNotificationsRead()"><i class="fa-solid fa-check-double"></i> Mark all as read</button>
+        </div>
+        <div class="notif-scroll-list" id="notif-list-container">
+            <!-- Rendered via JS -->
+        </div>
+    </aside>
+
+    <!-- Modal: Create NGO Requirement -->
+    <div class="modal-overlay hidden" id="req-modal">
+        <div class="modal-card">
+            <div class="modal-header">
+                <h3><i class="fa-solid fa-handshake-angle"></i> Post Food Requirement</h3>
+                <button class="btn btn-icon" onclick="closeCreateRequirementModal()"><i class="fa-solid fa-xmark"></i></button>
+            </div>
+            <form id="ngo-req-form" onsubmit="handleNgoReqSubmit(event)">
+                <div class="form-group">
+                    <label for="req-food-type">Required Food Category <span class="required">*</span></label>
+                    <select id="req-food-type" required>
+                        <option value="Cooked Meals">Cooked Meals (Dinner / Lunch)</option>
+                        <option value="Bakery Items">Bakery Items & Breads</option>
+                        <option value="Packaged Food">Packaged & Sealed Food</option>
+                        <option value="Fruits & Vegetables">Fruits & Fresh Produce</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label for="req-meals">Number of Meals Required <span class="required">*</span></label>
+                    <input type="number" id="req-meals" required min="5" max="500" value="50">
+                </div>
+                <div class="form-group">
+                    <label for="req-address">Shelter / Distribution Address <span class="required">*</span></label>
+                    <input type="text" id="req-address" required value="Shanti Nagar, Bengaluru">
+                </div>
+                <div class="form-group">
+                    <label for="req-deadline">Required Before Time <span class="required">*</span></label>
+                    <input type="datetime-local" id="req-deadline" required>
+                </div>
+                <div class="form-group">
+                    <label for="req-notes">Notes / Dietary Preferences</label>
+                    <input type="text" id="req-notes" placeholder="e.g. Vegetarian preference, for resident elders & children">
+                </div>
+                <button type="submit" class="btn btn-primary btn-block btn-lg">Publish Requirement</button>
+            </form>
+        </div>
+    </div>
+
+    <!-- Modal: Match Details & Multi-Factor Breakdown -->
+    <div class="modal-overlay hidden" id="match-modal">
+        <div class="modal-card modal-lg">
+            <div class="modal-header">
+                <h3><i class="fa-solid fa-wand-magic-sparkles"></i> Intelligent Match Breakdown</h3>
+                <button class="btn btn-icon" onclick="closeMatchModal()"><i class="fa-solid fa-xmark"></i></button>
+            </div>
+            <div class="modal-body" id="match-modal-body">
+                <!-- Rendered dynamically -->
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal: CIE Project Defense & Viva Cheat Sheet -->
+    <div class="modal-overlay hidden" id="cie-modal">
+        <div class="modal-card modal-lg">
+            <div class="modal-header">
+                <h3><i class="fa-solid fa-graduation-cap"></i> FoodBridge — CIE Faculty Presentation & Defense Guide</h3>
+                <button class="btn btn-icon" onclick="closeCieModal()"><i class="fa-solid fa-xmark"></i></button>
+            </div>
+            <div class="modal-body cie-guide-content">
+                <div class="cie-banner">
+                    <h4>The 7-Step Lifecycle Formula</h4>
+                    <p class="formula-pill">POST ➔ VERIFY ➔ PRIORITIZE ➔ MATCH ➔ PICKUP ➔ DELIVER ➔ MEASURE</p>
+                </div>
+
+                <div class="cie-grid">
+                    <div class="cie-box">
+                        <h5>🤖 AI / VLM Role (Ollama + LLaVA)</h5>
+                        <p><strong>What it does:</strong> Preliminary visual verification of bulk/commercial surplus vessels vs. individual leftover plates.</p>
+                        <p class="cie-caution">⚠️ <strong>Defense Tip:</strong> Do NOT claim AI certifies food bacteriological safety. Frame it as visual volume validation.</p>
+                    </div>
+
+                    <div class="cie-box">
+                        <h5>🌡️ Quality & Urgency Scoring</h5>
+                        <p><strong>Formula:</strong> $S = S_{\text{time}} (40) + S_{\text{perishability}} (25) + S_{\text{weather}} (15) + S_{\text{qty}} (10) + S_{\text{freshness}} (10)$</p>
+                        <p>Real-time Open-Meteo API factors in temperature & humidity decay.</p>
+                    </div>
+
+                    <div class="cie-box">
+                        <h5>🎯 Intelligent Matching Algorithm</h5>
+                        <p><strong>Formula:</strong> $\text{Match} = 0.35 \times D_{\text{dist}} + 0.25 \times C_{\text{type}} + 0.20 \times Q_{\text{cov}} + 0.20 \times U_{\text{urgency}}$</p>
+                        <p>Coordinates supply and demand within feasible travel radius.</p>
+                    </div>
+
+                    <div class="cie-box">
+                        <h5>🚴 Volunteer & Transport Model</h5>
+                        <p>Surplus food is free. The platform computes transparent distance-based transport estimates (₹) borne by the accepting party.</p>
+                    </div>
+                </div>
+
+                <div class="cie-faq">
+                    <h5>Key Viva Q&A</h5>
+                    <div class="faq-item">
+                        <strong>Q: Why is this not just a simple CRUD website?</strong>
+                        <p>A: Because FoodBridge coordinates a multi-agent system with real-time VLM verification, weather decay heuristics, geospatial distance routing, and delivery audit logging.</p>
+                    </div>
+                    <div class="faq-item">
+                        <strong>Q: How do you compute meal-equivalents?</strong>
+                        <p>A: Standard food science approximation factors ($1\text{ kg cooked meal} \approx 3.0\text{ meals}$, $1\text{ kg food rescued} \approx 2.5\text{ kg CO}_2\text{ avoided}$).</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Leaflet JS -->
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
+    <!-- Chart.js -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    
+    <!-- FoodBridge Application Scripts -->
+    <script src="js/api.js"></script>
+    <script src="js/map.js"></script>
+    <script src="js/charts.js"></script>
+    <script src="js/app.js"></script>
+</body>
+</html>
